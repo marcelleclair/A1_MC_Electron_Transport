@@ -18,11 +18,13 @@ tau_mn = 0.2e-12;
 t = 0;
 dt = 5e-15;
 t_max = 1000*dt; % run for 1000 cycles
+P_sca = 1 - exp(-dt / tau_mn); % scattering prob. per e- per dt
 
-v_th = sqrt((2 * C.kb * T_i) / m_n); % thermal velocity of electrons
+sig = sqrt((C.kb * T_i) / m_n); %std for maxwell-boltzmann
+v_th = sqrt((2 * C.kb * T_i) / m_n); % mean thermal velocity of electrons
 l_mn = v_th / tau_mn;
 
-num_e = 100; % number of electrons
+num_e = 10000; % number of electrons
 num_disp = 10; % number of electrons displayed
 x_max = 200e-9; % maximum x position (nm)
 y_max = 100e-9; % maximum y position (nm)
@@ -32,10 +34,15 @@ x = x_max * rand(1, num_e);
 xp = x;
 y = y_max * rand(1, num_e);
 yp = y;
-% assign constant speed and random direction
-theta = 2 * pi * rand(1, num_e);
-vx = v_th * cos(theta);
-vy = v_th * sin(theta);
+
+% assign random speed by maxwell-boltzmann
+vx = normrnd(0,sig,1,num_e);
+vy = normrnd(0,sig,1,num_e);
+
+% % assign constant speed and random direction
+% theta = 2 * pi * rand(1, num_e);
+% vx = v_th * cos(theta);
+% vy = v_th * sin(theta);
 % temp as function of electron velocities
 T = @(vx, vy) (m_n .* mean((vx.^2) + (vy.^2))) / (2 * C.kb);
 
@@ -48,6 +55,10 @@ while t < t_max
     % compute new position
     x = x + vx * dt;
     y = y + vy * dt;
+    % scatter electrons
+    scatter = rand(1,num_e) < P_sca;
+    vx(scatter) = normrnd(0,sig,1,nnz(scatter));
+    vy(scatter) = normrnd(0,sig,1,nnz(scatter));
     % detect collisions and apply boundary conditions
     x_collision = (x < 0) | (x > x_max);
     x(x_collision) = mod(x(x_collision), x_max);
@@ -61,7 +72,7 @@ while t < t_max
     title("Temperature = " + Temp + " K");
     set(gca, 'ColorOrderIndex',1);
     plot([xp(1:num_disp); x(1:num_disp)], [yp(1:num_disp); y(1:num_disp)]);
-    pause(0.017); % 60 fps
+    pause(0.017); % 60 fps if all else is fast
     % present becomes past
     xp = x;
     yp = y;
