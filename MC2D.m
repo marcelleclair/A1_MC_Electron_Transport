@@ -23,7 +23,8 @@ t_max = 1000*dt;
 v_th = sqrt((2 * C.kb * T_i) / m_n); % thermal velocity of electrons
 l_mn = v_th / tau_mn;
 
-num_e = 10;
+num_e = 100; % number of electrons
+num_disp = 10; % number of electrons displayed
 x_max = 200e-9; % maximum x position (nm)
 y_max = 100e-9; % maximum y position (nm)
 
@@ -40,6 +41,9 @@ vy = v_th * sin(theta);
 T = @(vx, vy) (m_n .* mean((vx.^2) + (vy.^2))) / (2 * C.kb);
 
 hold on
+xlim([0 x_max]);
+ylim([0 y_max]);
+pbaspect([2 1 1]);
 
 while t < t_max
     % compute new position
@@ -57,10 +61,8 @@ while t < t_max
     fprintf("Time: %3.3E s / %3.3E s\n", t, t_max);
     title("Temperature = " + Temp + " K");
     set(gca, 'ColorOrderIndex',1);
-    plot([xp; x], [yp; y]);
-    xlim([0 x_max]);
-    ylim([0 y_max]);
-    pause(0.042);
+    plot([xp(1:num_disp); x(1:num_disp)], [yp(1:num_disp); y(1:num_disp)]);
+    pause(0.017); % 60 fps
     
     xp = x;
     yp = y;
