@@ -16,9 +16,8 @@ m_n = 0.26 * C.m_0;
 T_i = 300; % initial temperature (K)
 tau_mn = 0.2e-12;
 t = 0;
-n = 1;
 dt = 5e-15;
-t_max = 1000*dt;
+t_max = 1000*dt; % run for 1000 cycles
 
 v_th = sqrt((2 * C.kb * T_i) / m_n); % thermal velocity of electrons
 l_mn = v_th / tau_mn;
@@ -63,7 +62,7 @@ while t < t_max
     set(gca, 'ColorOrderIndex',1);
     plot([xp(1:num_disp); x(1:num_disp)], [yp(1:num_disp); y(1:num_disp)]);
     pause(0.017); % 60 fps
-    
+    % present becomes past
     xp = x;
     yp = y;
 end
