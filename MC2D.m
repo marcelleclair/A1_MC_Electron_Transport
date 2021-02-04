@@ -16,9 +16,11 @@ m_n = 0.26 * C.m_0;
 T_i = 300; % initial temperature (K)
 tau_mn = 0.2e-12;
 t = 0;
+n = 0;
 dt = 5e-15;
-t_max = 1000*dt; % run for 1000 cycles
+t_max = 300*dt; % run for 1000 cycles
 P_sca = 1 - exp(-dt / tau_mn); % scattering prob. per e- per dt
+% P_sca = 0;
 
 sig = sqrt((C.kb * T_i) / m_n); %std for maxwell-boltzmann
 v_th = sqrt((2 * C.kb * T_i) / m_n); % mean thermal velocity of electrons
@@ -43,13 +45,28 @@ vy = normrnd(0,sig,1,num_e);
 % theta = 2 * pi * rand(1, num_e);
 % vx = v_th * cos(theta);
 % vy = v_th * sin(theta);
-% temp as function of electron velocities
-T = @(vx, vy) (m_n .* mean((vx.^2) + (vy.^2))) / (2 * C.kb);
 
-hold on
-xlim([0 x_max]);
-ylim([0 y_max]);
+% temp as function of electron velocities
+temp = @(vx, vy) (m_n .* mean((vx.^2) + (vy.^2))) / (2 * C.kb);
+T = temp(vx, vy);
+Tp = T; % temperature at last step
+T_avg = T;
+
+fig_traj = figure("Name", "Trajectories");
+ax_traj = gca;
 pbaspect([2 1 1]);
+xlim(ax_traj, [0 x_max]);
+ylim(ax_traj, [0 y_max]);
+hold(ax_traj, 'on');
+fig_temp = figure("Name", "Temperature");
+ax_temp = gca;
+title(ax_temp, "Semiconductor Temperature with Maxwell-Boltzmann Scattering");
+ylabel(ax_temp, "Temperature (K)");
+xlabel(ax_temp, "Time (s)");
+hold(ax_temp, 'on');
+grid(ax_temp, 'on');
+fig_hist = figure("Name", "Velocity Distribution");
+ax_hist = gca;
 
 while t < t_max
     % compute new position
@@ -65,17 +82,25 @@ while t < t_max
     xp(x_collision) = x(x_collision);
     y_collision = (y < 0) | (y > y_max);
     vy(y_collision) = -vy(y_collision);
-    Temp = T(vx, vy);
+    T = temp(vx, vy);
+    v = sqrt(vx.^2 + vy.^2);
     % advance clock
     t = t + dt;
+    n = n + 1;
+    T_avg = T_avg + (T - T_avg)/n;
     fprintf("Time: %3.3E s / %3.3E s\n", t, t_max);
-    title("Temperature = " + Temp + " K");
-    set(gca, 'ColorOrderIndex',1);
-    plot([xp(1:num_disp); x(1:num_disp)], [yp(1:num_disp); y(1:num_disp)]);
-    pause(0.017); % 60 fps if all else is fast
+    title(ax_traj, "Temperature = " + T + " K");
+    set(ax_traj, 'ColorOrderIndex',1);
+    plot(ax_traj, [xp(1:num_disp); x(1:num_disp)], [yp(1:num_disp); y(1:num_disp)]);
+    plot(ax_temp, [(t-dt) t], [Tp T], 'r');
+    plot(ax_temp, t, T_avg, '.g');
+    histogram(ax_hist, v, 'Normalization', 'probability');
+    title(ax_hist, "Electron Velocity Distribution");
+    xlabel(ax_hist, "Velocity (m/s)");
+    ylabel(ax_hist, "Relative Frequency");
+    pause(0.001); 
     % present becomes past
+    Tp = T;
     xp = x;
     yp = y;
 end
-
-
