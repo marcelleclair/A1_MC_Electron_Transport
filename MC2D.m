@@ -14,11 +14,11 @@ C.c = 299792458;                    % speed of light
 
 m_n = 0.26 * C.m_0;
 T_i = 300; % initial temperature (K)
-tau_mn = 0.2e-12;
-t = 0;
-n = 0;
-dt = 5e-15;
-t_max = 300*dt; % run for 1000 cycles
+tau_mn = 0.2e-12; % given mean time between collisions
+t = 0; % current time
+n = 0; % current number of steps
+dt = 5e-15; % time step duration
+t_max = 1000*dt; % run for 1000 cycles
 P_sca = 1 - exp(-dt / tau_mn); % scattering prob. per e- per dt
 % P_sca = 0;
 
@@ -30,6 +30,13 @@ num_e = 10000; % number of electrons
 num_disp = 10; % number of electrons displayed
 x_max = 200e-9; % maximum x position (nm)
 y_max = 100e-9; % maximum y position (nm)
+
+t_slc = zeros(1, num_e); % Times since last colision
+col_total = 0; % cumulative number of electron collisions and scatters
+MFP = 0;
+tau_calc = 0;
+t_free = []; % list of all times between collisions
+l_free = []; % list of all free path lengths
 
 % randomly distribute electrons within the boundaries
 x = x_max * rand(1, num_e);
@@ -52,6 +59,7 @@ T = temp(vx, vy);
 Tp = T; % temperature at last step
 T_avg = T;
 
+% initialize figures
 fig_traj = figure("Name", "Trajectories");
 ax_traj = gca;
 pbaspect([2 1 1]);
@@ -68,6 +76,8 @@ grid(ax_temp, 'on');
 fig_hist = figure("Name", "Velocity Distribution");
 ax_hist = gca;
 
+v = sqrt(vx.^2 + vy.^2);
+
 while t < t_max
     % compute new position
     x = x + vx * dt;
@@ -82,6 +92,22 @@ while t < t_max
     xp(x_collision) = x(x_collision);
     y_collision = (y < 0) | (y > y_max);
     vy(y_collision) = -vy(y_collision);
+    
+    t_slc = t_slc + dt;
+    col_curr = nnz(scatter | y_collision);
+    % update rolling average MFP and tau
+    tau_calc = ((col_total * tau_calc) + (col_curr * mean(t_slc(scatter | y_collision))))...
+        / (col_total + col_curr);
+    MFP = ((col_total * MFP) + (col_curr * mean(v(scatter | y_collision) .* t_slc(scatter | y_collision))))...
+        / (col_total + col_curr);
+    col_total = col_total + col_curr;
+    % append times for scattered or reflected electrons before resetting
+    % t_free = [t_free t_slc(scatter | y_collision)];
+    % l_free = [l_free (v(scatter | y_collision) .* t_slc(scatter | y_collision))];
+    t_slc(scatter | y_collision) = 0;
+    
+    % update temp and velocity magnitude, v is left to now
+    % to allow computing mean-free-path
     T = temp(vx, vy);
     v = sqrt(vx.^2 + vy.^2);
     % advance clock
@@ -98,9 +124,15 @@ while t < t_max
     title(ax_hist, "Electron Velocity Distribution");
     xlabel(ax_hist, "Velocity (m/s)");
     ylabel(ax_hist, "Relative Frequency");
-    pause(0.001); 
+    pause(0.00001); 
     % present becomes past
     Tp = T;
     xp = x;
     yp = y;
 end
+
+%MFP = mean(l_free);
+%tau_calc = mean(t_free);
+fprintf("SIMULATION END AFTER %d STEPS\n", n);
+fprintf("Mean Free Path = %3.3E m\n", MFP);
+fprintf("Mean time between collisions = %3.3E\n", tau_calc);
