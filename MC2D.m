@@ -18,7 +18,7 @@ tau_mn = 0.2e-12; % given mean time between collisions
 t = 0; % current time
 n = 0; % current number of steps
 dt = 5e-15; % time step duration
-t_max = 1000*dt; % run for 1000 cycles
+t_max = 100*dt; % run for 1000 cycles
 P_sca = 1 - exp(-dt / tau_mn); % scattering prob. per e- per dt
 % P_sca = 0;
 
@@ -32,6 +32,8 @@ num_disp = 10; % number of electrons displayed
 x_max = 200e-9; % maximum x position (nm)
 y_max = 100e-9; % maximum y position (nm)
 
+% boxes extend past outer bounds to top electrons from bouncing
+% between the box and boundary
 box1 = Obstruction([80e-9 -10e-9], 40e-9, 50e-9, 0);
 box2 = Obstruction([80e-9 60e-9], 40e-9, 50e-9, 0);
 boxes = [box1 box2]; % array of all obstructions
@@ -168,6 +170,37 @@ while t < t_max
     xp = x;
     yp = y;
 end
+
+n_bins_y = 20;
+n_bins_x = n_bins_y * 2;
+A_bin = (y_max / n_bins_y)^2; % area of each discrete square
+edges_y = linspace(0, y_max, n_bins_y + 1);
+edges_x = linspace(0, x_max, 2*n_bins_y + 1);
+
+bin_y = discretize(y, edges_y);
+bin_x = discretize(x, edges_x);
+
+hmap = zeros(n_bins_y, n_bins_x);
+dens = zeros(n_bins_y, n_bins_x);
+
+for ni = 1 : n_bins_x
+    for nj = 1 : n_bins_y
+        hmap(nj, ni) = temp(vx(bin_x == ni & bin_y == nj), vy(bin_x == ni & bin_y == nj));
+        dens(nj, ni) = nnz(bin_x == ni & bin_y == nj) ./ A_bin;
+    end
+end
+
+fig_dens = figure("Name", "Electron Density");
+surf(dens);
+pbaspect([2 1 1]);
+
+fig_heat = figure("Name", "Temperature Map");
+pcolor(hmap);
+pbaspect([2 1 1]);
+
+% hist3(transpose([x;y]), [20,10]);
+% pbaspect([2 1 1]);
+% view([1 -1 1]);
 
 % fprintf("SIMULATION END AFTER %d STEPS\n", n);
 % fprintf("Mean Free Path = %3.3E m\n", MFP);

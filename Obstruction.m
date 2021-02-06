@@ -20,6 +20,8 @@ classdef Obstruction
         function [IN, INL, INR, INU, IND] = isInside(p, obj)
             IN = p(1,:) >= obj.origin(1) & p(1,:) <= (obj.origin(1) + obj.x_size) ...
                 & p(2,:) >= obj.origin(2) & p(2,:) <= (obj.origin(2) + obj.y_size);
+            % box is divided into left, right, up, down by two diagonals
+            % check which zone p is in and return logical arrays
             INL = IN & p(2,:) >= obj.diag_up(p(1,:)) & p(2,:) <= obj.diag_dn(p(1,:));
             INR = IN & p(2,:) <= obj.diag_up(p(1,:)) & p(2,:) >= obj.diag_dn(p(1,:));
             INU = IN & p(2,:) >= obj.diag_up(p(1,:)) & p(2,:) >= obj.diag_dn(p(1,:));
