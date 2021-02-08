@@ -18,16 +18,16 @@ tau_mn = 0.2e-12; % given mean time between collisions
 t = 0; % current time
 n = 0; % current number of steps
 dt = 5e-15; % time step duration
-t_max = 100*dt; % run for 1000 cycles
+t_max = 1000*dt; % run for 1000 cycles
 P_sca = 1 - exp(-dt / tau_mn); % scattering prob. per e- per dt
 % P_sca = 0;
 
 sig = sqrt((C.kb * T_i) / m_n); %std for maxwell-boltzmann
 v_th = sqrt((2 * C.kb * T_i) / m_n); % mean thermal velocity of electrons
-l_mn = v_th / tau_mn;
+l_mn = v_th * tau_mn;
 
 % Define spatial and temporal boundaries
-num_e = 10000; % number of electrons
+ num_e = 10000; % number of electrons
 num_disp = 10; % number of electrons displayed
 x_max = 200e-9; % maximum x position (nm)
 y_max = 100e-9; % maximum y position (nm)
@@ -99,7 +99,6 @@ grid(ax_temp, 'on');
 fig_hist = figure("Name", "Velocity Distribution");
 ax_hist = gca;
 
-v = sqrt(vx.^2 + vy.^2);
 
 while t < t_max
     % compute new position
@@ -173,7 +172,7 @@ end
 
 n_bins_y = 20;
 n_bins_x = n_bins_y * 2;
-A_bin = (y_max / n_bins_y)^2; % area of each discrete square
+A_bin = (100 * y_max / n_bins_y)^2; % area of each square in cm^2
 edges_y = linspace(0, y_max, n_bins_y + 1);
 edges_x = linspace(0, x_max, 2*n_bins_y + 1);
 
@@ -192,12 +191,22 @@ end
 
 fig_dens = figure("Name", "Electron Density");
 surf(dens);
+zlabel("Electron density (cm^{-3})");
+xlabel('x (m)');
+ylabel('y (m)');
 pbaspect([2 1 1]);
+view([1 -2 2]);
 
 fig_heat = figure("Name", "Temperature Map");
 pcolor(hmap);
-pbaspect([2 1 1]);
+annotation('textarrow',[1,1],[0.5,0.5],'string','Temperature (K)', ...
+      'HeadStyle','none','LineStyle','none','HorizontalAlignment','center','TextRotation',90);
 
+xlabel('x (m)');
+ylabel('y (m)');
+colorbar
+pbaspect([2 1 1]);
+ 
 % hist3(transpose([x;y]), [20,10]);
 % pbaspect([2 1 1]);
 % view([1 -1 1]);
